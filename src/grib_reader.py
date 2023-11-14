@@ -108,7 +108,9 @@ def load_grib(filename,field_list = _field_keyval_mapping.keys()):
     cubes = load_iris_cubes(filename,field_list=field_list)
     data_array_list = [xarray.DataArray.from_iris(c) for c in cubes]
     isobaric_da_list,surface_da_list, coord_da_list = _split_data_array_by_level_type(data_array_list)
-
+    
+    if not coord_da_list:
+        coord_da_list = _generate_projected_coordinate_data_arrays(data_array_list[0])    
     coord_ds = xarray.merge(coord_da_list)
 
     isobaric_ds = _create_dataset(isobaric_da_list,coord_ds,['forecast_period'])
@@ -147,6 +149,20 @@ def _split_data_array_by_level_type(data_array_list):
     coordinate_data_array_list = [x.reset_coords() for x in data_array_list if x.name in ['latitude','longitude']]
     return isobaric_data_array_list,surface_data_array_list,coordinate_data_array_list
 
+def _generate_projected_coordinate_data_arrays(da):
+    pc = ccrs.PlateCarree()
+    ys,xs = numpy.meshgrid(da.projection_y_coordinate,da.projection_x_coordinate)
+    longitude,latitude,_ = pc.transform_points(da.crs,xs,ys).T
+    longitude_da = _create_latlon_data_arrays(da,longitude)
+    latitude_da = _create_latlon_data_arrays(da,latitude)
+    return longitude_da,latitude_da
+    
+
+def _create_latlon_data_arrays(da,ll_array):
+    coords = {c:da[c] for c in da.coords if "time" in c or "period" in c or "projection" in c}
+    return xarray.DataArray(data=ll_array,coords=coords,dims=da.dims)
+
+    
 
 def _rename_variables(inds):
     '''Renames fields in a given dataset to a single set of standard names
