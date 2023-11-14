@@ -165,8 +165,9 @@ def _create_latlon_data_arrays(da,ll_array):
         'projection_y_coordinate':da['projection_y_coordinate'],
         'projection_x_coordinate':da['projection_x_coordinate']
     }
+    dims = ['projection_y_coordinate','projection_x_coordinate']
     #coords = {c:da[c] for c in da.coords if "time" in c or "period" in c or "projection" in c}
-    return xarray.DataArray(data=ll_array,coords=coords,dims=da.dims)
+    return xarray.DataArray(data=ll_array,coords=coords,dims=dims)
 
     
 
