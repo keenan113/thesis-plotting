@@ -154,7 +154,9 @@ def _generate_projected_coordinate_data_arrays(da):
     ys,xs = numpy.meshgrid(da.projection_y_coordinate,da.projection_x_coordinate)
     longitude,latitude,_ = pc.transform_points(da.crs,xs,ys).T
     longitude_da = _create_latlon_data_arrays(da,longitude)
+    longitude_da.name = 'longitude'
     latitude_da = _create_latlon_data_arrays(da,latitude)
+    latitude_da.name = 'latitude'
     return longitude_da,latitude_da
     
 
