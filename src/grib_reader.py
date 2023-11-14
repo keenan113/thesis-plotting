@@ -161,7 +161,11 @@ def _generate_projected_coordinate_data_arrays(da):
     
 
 def _create_latlon_data_arrays(da,ll_array):
-    coords = {c:da[c] for c in da.coords if "time" in c or "period" in c or "projection" in c}
+    coords = {
+        'projection_y_coordinate':da['projection_y_coordinate'],
+        'projection_x_coordinate':da['projection_x_coordinate']
+    }
+    #coords = {c:da[c] for c in da.coords if "time" in c or "period" in c or "projection" in c}
     return xarray.DataArray(data=ll_array,coords=coords,dims=da.dims)
 
     
