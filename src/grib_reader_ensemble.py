@@ -109,6 +109,7 @@ def _add_field_metadata(cube,message,filename):
         
         return cube
     except TranslationError:
+        print('Translation Error but continuing anyway. Skipping field...')
         return None
 
 
@@ -126,7 +127,7 @@ def load_iris_cubes(grib_filename,field_list = list(_field_keyval_mapping.keys()
     raw_cubes = iris.load(grib_filename,field_list,callback=_add_field_metadata)
     return list(raw_cubes)
 
-def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=False):
+def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=False,split_dataset_by_dimension=False):
 
     cubes = load_iris_cubes(filename,field_list=field_list)
 
@@ -140,21 +141,28 @@ def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=
                                 'Fix filenames to enable ensemble member dimension. Skipping for now...')
     
     isobaric_da_list, surface_da_list, coord_da_list = _split_data_array_by_level_type(data_array_list)
-
+    
+    if not coord_da_list:
+        coord_da_list = _generate_projected_coordinate_data_arrays(data_array_list[0])
     coord_ds = xarray.merge(coord_da_list)
 
     grib_datasets = {'coordinate-dataset':coord_ds}
     if isobaric_da_list:
         isobaric_ds = _create_dataset(isobaric_da_list,coord_ds,['forecast_period'])
         isobaric_ds['pressure'] = isobaric_ds['pressure']/100.
-        grib_datasets['isobaric-dataset'] = _rename_variables(isobaric_ds)
+        grib_datasets['isobaric-dataset'] = isobaric_ds
     
     if surface_da_list:
         surface_ds = _create_dataset(surface_da_list,coord_ds,['forecast_period','height'])
-        grib_datasets['surface-dataset'] = _rename_variables(surface_ds)
-        
+        grib_datasets['surface-dataset'] = surface_ds
+    
+    if split_dataset_by_dimension:
+        out_dataset = grib_datasets
+    else:
+        out_dataset = xarray.merge([v for k,v in grib_datasets.items() if k != "coordinate-dataset"])
+        out_dataset.attrs = {"crs":list(out_dataset.data_vars.values())[0]}
 
-    return grib_datasets
+    return out_dataset
 
 
 def _create_dataset(data_arrays,coord_ds,drop_vars):
@@ -186,8 +194,30 @@ def _split_data_array_by_level_type(data_array_list):
     return isobaric_data_array_list,surface_data_array_list,coordinate_data_array_list
 
 
+def _generate_projected_coordinate_data_arrays(da):
+    pc = ccrs.PlateCarree()
+    ys,xs = numpy.meshgrid(da.projection_y_coordinate,da.projection_x_coordinate)
+    longitude,latitude,_ = pc.transform_points(da.crs,xs,ys).T
+    longitude_da = _create_latlon_data_arrays(da,longitude)
+    longitude_da.name = 'longitude'
+    latitude_da = _create_latlon_data_arrays(da,latitude)
+    latitude_da.name = 'latitude'
+    return longitude_da,latitude_da
+
+
+def _create_latlon_data_arrays(da,ll_array):
+    coords = {
+        'projection_y_coordinate':da['projection_y_coordinate'],
+        'projection_x_coordinate':da['projection_x_coordinate']
+    }
+    dims = ['projection_y_coordinate','projection_x_coordinate']
+    return xarray.DataArray(data=ll_array,coords=coords,dims=dims)
+
 def _rename_variables(inds):
-    '''Renames fields in a given dataset to a single set of standard names
+    '''
+    Currently deprecated as it is unclear why we want standard names. Will be removed in future.
+
+    Renames fields in a given dataset to a single set of standard names
     that make matching datasets simple.
 
     Args:
