@@ -4,6 +4,7 @@ import os
 import sys
 import pandas
 import numpy as np
+import itertools
 import cartopy_util 
 import grib_reader
 import plotmap
@@ -14,8 +15,8 @@ def main():
     cartopy_metadata = cartopy_util.get_cartopy_metadata(args.sample_grid_file)
     
     ds = grib_reader.load_grib(args.infile)    
-    latitudes = ds['surface-dataset'].latitude.values
-    longitudes = ds['surface-dataset'].longitude.values
+    latitudes = ds.latitude.values
+    longitudes = ds.longitude.values
     wx_plotter = plotmap.PlotMap(
         args.outdir,
         "RAP_analysis",
@@ -24,11 +25,25 @@ def main():
         longitudes
     )
     
-    times = ds['isobaric-dataset'].time
-    for time in times.values:
+    for time,issuance_time in itertools.product(ds.time,ds.forecast_reference_time):
 
-        MSLP, CREFL, GH500mb = preprocess_fields(ds,time)
-        valid_time = pandas.to_datetime(time)
+        MSLP = ds.mslp_MAPS_surface.sel(
+            time=time,
+            forecast_reference_time=issuance_time
+        ).values/100
+
+        CREFL = ds.composite_reflectivity_surface.sel(
+            time=time,
+            forecast_reference_time=issuance_time
+        ).values
+
+        GH500mb = ds.geopotential_height_isobaric.sel(
+            time=time,
+            forecast_reference_time=issuance_time,
+            pressure=500.
+        ).values
+
+        valid_time = pandas.to_datetime(time.values)
         
         wx_plotter.plot_MSLP_GH500mb_CREFL(
             valid_time,
@@ -37,14 +52,6 @@ def main():
             CREFL
         )
 
-def preprocess_fields(ds,time):
-    isobaric_ds = ds['isobaric-dataset']
-    surface_ds = ds['surface-dataset']
-
-    MSLP = surface_ds.mslp_MAPS_surface.sel(time=time).values/100
-    CREFL = surface_ds.composite_reflectivity_surface.sel(time=time).values
-    GH500mb = isobaric_ds.height.sel(time=time,pressure=500.).values
-    return MSLP,CREFL,GH500mb
 
 def parse_args():
     parser = argparse.ArgumentParser(
