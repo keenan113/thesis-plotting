@@ -7,7 +7,8 @@ import cartopy.crs as ccrs
 from iris_grib._load_convert import unscale, ellipsoid_geometry, ellipsoid
 import iris.coord_systems as icoord_systems
 
-from src.iris_grib_mappings import _level_type_mappings,_field_keyval_mapping
+#from src.iris_grib_mappings import _level_type_mappings,_field_keyval_mapping
+from iris_grib_mappings import _level_type_mappings,_field_keyval_mapping
 
 def get_level_type(type_of_first_fixed_surface,type_of_second_fixed_surface):
     for key,val in _level_type_mappings.items():

@@ -125,6 +125,13 @@ _field_keyval_mapping = {
         "type_of_level":"meanSea",
         "product_definition_template":0
     },
+    "mslp_MAPS_surface":{
+        "discipline":0,
+        "category":3,
+        "number":198,
+        "type_of_level":"meanSea",
+        "product_definition_template":0
+    },
     "composite_reflectivity_surface":{  #Max/Composite Reflectivity
         "discipline":0,
         "category":16,
