@@ -7,7 +7,6 @@ import cartopy.crs as ccrs
 from iris_grib._load_convert import unscale, ellipsoid_geometry, ellipsoid
 import iris.coord_systems as icoord_systems
 
-#from src.iris_grib_mappings import _level_type_mappings,_field_keyval_mapping
 from iris_grib_mappings import _level_type_mappings,_field_keyval_mapping
 
 def get_level_type(type_of_first_fixed_surface,type_of_second_fixed_surface):
@@ -114,14 +113,17 @@ def load_grib(filename,field_list = _field_keyval_mapping.keys()):
         coord_da_list = _generate_projected_coordinate_data_arrays(data_array_list[0])    
     coord_ds = xarray.merge(coord_da_list)
 
-    isobaric_ds = _create_dataset(isobaric_da_list,coord_ds,['forecast_period'])
-    isobaric_ds['pressure'] = isobaric_ds['pressure']/100.
-    surface_ds = _create_dataset(surface_da_list,coord_ds,['forecast_period','height'])
+    grib_datasets = []
+    if isobaric_da_list:
+        grib_datasets.append(_create_dataset(isobaric_da_list,coord_ds,['forecast_period']))
+    if surface_da_list:
+        grib_datasets.append(_create_dataset(surface_da_list,coord_ds,['forecast_period','height']))
     
-    isobaric_ds = _rename_variables(isobaric_ds)
-    surface_ds = _rename_variables(surface_ds)
-
-    return {'isobaric-dataset':isobaric_ds,'surface-dataset':surface_ds}
+    out_ds = xarray.merge(grib_datasets)
+    out_ds['pressure'] = out_ds['pressure']/100.
+    out_ds.attrs = {"crs":data_array_list[0].crs}
+    
+    return out_ds
 
 def _create_dataset(data_arrays,coord_ds,drop_vars):
     data_arrays = [
@@ -140,6 +142,8 @@ def _create_dataset(data_arrays,coord_ds,drop_vars):
         data_arrays,
         combine_attrs='drop_conflicts'
     )
+    
+    ds = ds.expand_dims(['time','forecast_reference_time'])
  
     return ds
     
@@ -167,9 +171,7 @@ def _create_latlon_data_arrays(da,ll_array):
         'projection_x_coordinate':da['projection_x_coordinate']
     }
     dims = ['projection_y_coordinate','projection_x_coordinate']
-    #coords = {c:da[c] for c in da.coords if "time" in c or "period" in c or "projection" in c}
     return xarray.DataArray(data=ll_array,coords=coords,dims=dims)
-
     
 
 def _rename_variables(inds):
