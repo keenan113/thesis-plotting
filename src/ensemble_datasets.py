@@ -40,28 +40,10 @@ class Dataset:
         self._input_grib_files = grib_file_list
 
     def _read_grib_with_iris(self,field_list,ensemble):
-        grib_datasets = load_grib(self._input_grib_files,field_list=field_list,ensemble=ensemble)
-        
-        try:
-            assert 'surface-dataset' in grib_datasets.keys()
-            self.surface_data = grib_datasets['surface-dataset']
-            varname = list(self.surface_data.data_vars)[0]
-        except AssertionError:
-            raise ValueError("Expected at least the surface dataset...not found after load")
-        
-        try:
-            self.isobaric_data = grib_datasets['isobaric-dataset']
-        except KeyError:
-            self.isobaric_data = None
+        self.data = load_grib(self._input_grib_files,field_list=field_list,ensemble=ensemble)
+        self.crs = self.data.crs
 
-        try:
-            self.hybrid_data = grib_datasets['hybrid-dataset']
-        except KeyError:
-            self.hybrid_data = None
-
-        self.crs = self.surface_data[varname].crs
-
-        alldims = self.surface_data[varname].dims
+        alldims = self.ds.dims
         drop_dim_dict = {l:0 for l in alldims if l not in ['projection_x_coordinate','projection_y_coordinate']}
         
         
@@ -90,7 +72,7 @@ class Dataset:
         
         points_df = get_x_and_y_proj_coords_from_latlon(inlat,inlon,self.crs)
         
-        profile_ds = self.isobaric_data.sel(
+        profile_ds = self.data.sel(
             projection_x_coordinate=points_df['x'].to_xarray(),
             projection_y_coordinate=points_df['y'].to_xarray(),
             method = 'nearest'

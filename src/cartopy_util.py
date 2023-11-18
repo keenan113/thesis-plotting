@@ -38,6 +38,7 @@ def _get_cartopy_crs(wrfds):
     return ccrs
 
 def _define_grid_bounds(lats,lons):
+    #TODO replace this simple function with fully fleshed out data classes
     geobounds = {
         "bottom_left":{
             "lon":lons[0,0],

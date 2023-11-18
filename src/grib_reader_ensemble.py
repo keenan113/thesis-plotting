@@ -109,7 +109,6 @@ def _add_field_metadata(cube,message,filename):
         
         return cube
     except TranslationError:
-        print('Translation Error but continuing anyway. Skipping field...')
         return None
 
 
@@ -160,7 +159,7 @@ def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=
         out_dataset = grib_datasets
     else:
         out_dataset = xarray.merge([v for k,v in grib_datasets.items() if k != "coordinate-dataset"])
-        out_dataset.attrs = {"crs":list(out_dataset.data_vars.values())[0]}
+        out_dataset.attrs = {"crs":data_array_list[0].crs}
 
     return out_dataset
 

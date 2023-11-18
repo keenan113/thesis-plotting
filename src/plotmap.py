@@ -147,7 +147,8 @@ class PlotMap:
     def save_plot(self):
         if self.filename == None:
             self.filename = "./test.png"
-        plt.savefig(self.filename, dpi=150, facecolor='w', edgecolor='w', orientation='landscape')
+        plt.savefig(self.filename, dpi=150, facecolor='w', edgecolor='w',
+                    orientation='landscape', bbox_inches=None, pad_inches=0.5)
         plt.close('all')
     
     def plot_MSLP_GH500mb_CREFL(self,valid_time,MSLP,GH500mb,CREFL):
