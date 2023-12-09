@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore")
 
 import xarray
 import pandas
-from cartopy_util import get_cartopy_metadata
+from cartopy_util import PlotCartopy
 
 CopyIndices = {'observations':0,'prior_ens_mean':1,'posterior_ens_mean':2}
 
@@ -43,7 +43,7 @@ def main():
     variable_name = PlotStuff[args.field_name]['VarName']
     copy_index = CopyIndices[args.field_type]
 
-    cartopy_metadata = get_cartopy_metadata(args.sample_file_path)
+    cartopy_metadata = PlotCartopy(args.sample_file_path)
     """
     try:
         
@@ -171,7 +171,7 @@ def PlotReflObs(Outdir,ObsLevel,LonLevel,LatLevel,PlotSettings,cartopy_metadata)
 
 
     fig = plt.figure(figsize=(9, 10))
-    ax1 = fig.add_subplot(2, 1, 1, projection=cartopy_metadata['projection'], anchor='S')
+    ax1 = fig.add_subplot(2, 1, 1, projection=cartopy_metadata.projection, anchor='S')
     ax1.set_position([0.05, 0.14, 0.9, 0.80], which='both')
     ax1.outline_patch.set_linewidth(1.0)
     ax1.outline_patch.set_zorder(6)
@@ -190,8 +190,8 @@ def PlotReflObs(Outdir,ObsLevel,LonLevel,LatLevel,PlotSettings,cartopy_metadata)
     ax1.add_feature(lakes, edgecolor='#404040', linewidth=2.0, zorder=4)
 
     #Set the x and y limits to equal the domain of the WRF run that we did
-    ax1.set_xlim(cartopy_metadata['xlim'])
-    ax1.set_ylim(cartopy_metadata['ylim'])
+    ax1.set_xlim(cartopy_metadata.xlim)
+    ax1.set_ylim(cartopy_metadata.ylim)
 
     cmap = PlotStuff[VarKeyName]['cmap']
     cmap.set_under('white')

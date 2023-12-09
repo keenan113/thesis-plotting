@@ -143,7 +143,7 @@ def _create_dataset(data_arrays,coord_ds,drop_vars):
         combine_attrs='drop_conflicts'
     )
     
-    ds = ds.expand_dims(['time','forecast_reference_time'])
+    ds = ds.expand_dims([t for t in ['time'] if t not in ds.dims.keys()])
  
     return ds
     

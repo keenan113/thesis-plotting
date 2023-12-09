@@ -139,4 +139,11 @@ _field_keyval_mapping = {
         "type_of_level":"atmosphereSingleLayer",
         "product_definition_template":0
     },
+#    "total_precipitation_surface":{  #run-total precipitation 
+#        "discipline":0,
+#        "category":1,
+#        "number":8,
+#        "type_of_level":"surface",
+#        "product_definition_template":8
+#    },
 }

@@ -36,6 +36,7 @@ def _get_field_info_dict(message):
     type_of_second_fixed_surface = sections[4]["typeOfSecondFixedSurface"]
     scale_factor_of_second_fixed_surface = sections[4]["scaleFactorOfSecondFixedSurface"]
     scaled_value_of_second_fixed_surface = sections[4]["scaledValueOfSecondFixedSurface"]
+    dx = sections[3]['Dx'] * 1e-6
 
     #If needed, the grid resolution can be pulled out and included in the returned
     # meta dictionary. This is possible because all matching is done based on keys from
@@ -54,7 +55,8 @@ def _get_field_info_dict(message):
             "number":parameter_number,
             "product_definition_template":product_definition_template,
             "type_of_level":level_type,
-            "level":level
+            "level":level,
+            "res":dx
             }
 
 def _get_grid_coordinate_reference_system(message):
@@ -108,6 +110,7 @@ def _add_field_metadata(cube,message,filename):
                 cube.rename(name)
         
         return cube
+
     except TranslationError:
         return None
 
@@ -139,10 +142,10 @@ def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=
             warnings.warn('Attempted to add a member dimension using filename. Expected files like <name>_<YYYYMMDDTHHMMSS>_<mem:04>.grib2'
                                 'Fix filenames to enable ensemble member dimension. Skipping for now...')
     
-    isobaric_da_list, surface_da_list, coord_da_list = _split_data_array_by_level_type(data_array_list)
+    isobaric_da_list, surface_da_list, _coord_da_list = _split_data_array_by_level_type(data_array_list)
     
-    if not coord_da_list:
-        coord_da_list = _generate_projected_coordinate_data_arrays(data_array_list[0])
+    #if not coord_da_list:
+    coord_da_list = _generate_projected_coordinate_data_arrays(data_array_list[0])
     coord_ds = xarray.merge(coord_da_list)
 
     grib_datasets = {'coordinate-dataset':coord_ds}
@@ -159,7 +162,8 @@ def load_grib(filename,field_list = list(_field_keyval_mapping.keys()),ensemble=
         out_dataset = grib_datasets
     else:
         out_dataset = xarray.merge([v for k,v in grib_datasets.items() if k != "coordinate-dataset"])
-        out_dataset.attrs = {"crs":data_array_list[0].crs}
+        out_dataset = _rename_variables(out_dataset) 
+        out_dataset.attrs = {"crs":data_array_list[0].crs,'res':data_array_list[0].grib2_meta['res']}
 
     return out_dataset
 
@@ -180,8 +184,7 @@ def _create_dataset(data_arrays,coord_ds,drop_vars):
         data_arrays,
         combine_attrs='drop_conflicts'
     )
-    
-    ds = ds.expand_dims(['time','forecast_reference_time'])
+    ds = ds.expand_dims('time' if 'time' not in ds.dims.keys() else None)
     
     return ds
     
@@ -213,9 +216,7 @@ def _create_latlon_data_arrays(da,ll_array):
     return xarray.DataArray(data=ll_array,coords=coords,dims=dims)
 
 def _rename_variables(inds):
-    '''
-    Currently deprecated as it is unclear why we want standard names. Will be removed in future.
-
+    """
     Renames fields in a given dataset to a single set of standard names
     that make matching datasets simple.
 
@@ -223,9 +224,7 @@ def _rename_variables(inds):
         inds (xarray.Dataset): dataset containing any number of meteorological fields
     Returns:
         (xarray.Dataset): dataset with fields renamed to standard names
-    '''
-
-    rename_dict = {
+        
         'air_temperature_surface':'temperature',
         'dewpoint_temperature_surface':'dewpoint',
         'u_wind_surface':'uwind',
@@ -237,7 +236,10 @@ def _rename_variables(inds):
         'u_wind_isobaric':'uwind',
         'v_wind_isobaric':'vwind',
         'geopotential_height_isobaric':'height'
+    """
 
+    rename_dict = {
+        "mslp_MAPS_surface":"mslp_surface"
     }
     dataset_variables = list(inds.data_vars)
     rename_dict = {key:value for key,value in rename_dict.items() if key in dataset_variables}
