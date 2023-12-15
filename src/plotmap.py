@@ -67,6 +67,8 @@ class PlotMap:
     def _define_colormap(self,cmap_name):
         if cmap_name == 'reflectivity':
             self.cmap = custom_colormaps.get_reflectivity_colormap()
+        elif cmap_name == "fgen":
+            self.cmap = custom_colormaps.get_fgen_colormap()
         else:
             self.cmap = plt.get_cmap('viridis')
     
@@ -186,6 +188,30 @@ class PlotMap:
         self._set_xylims()
         self._set_plot_filename("CREFL_MSLP_500mbGPT",valid_time,issuance_time=issuance_time)
         self.save_plot()
+
+    def plot_isobaric_fgen_heights(self,valid_time,FGEN,GH,issuance_time=None):
+         
+        self.init_plot()
+        self._set_plot_time_title(valid_time,issuance_time=issuance_time)
+        self._set_plot_custom_title(figure_title=f'FGEN [color-filled] | {pressure_level}hPa GH [black]') 
+        
+        self._define_colormap('fgen') 
+        self._configure_colormap_legend(
+            legend_name='Frontogenesis (K/100km/3hr)',
+            bounds=np.arange(1, 19, 2),
+            ticks=np.arange(1, 19, 2)
+        )
+            
+        
+        GH_contours = self.add_contour(GH, np.arange(1000, 10000, 100),'black')
+        FGEN_contourfilled = self.add_filled_contour(FGEN, np.arange(1, 19, 2), self.cmap)
+
+        self.set_contour_labels(GH_contours)
+        
+        self._set_xylims()
+        self._set_plot_filename(f"FGEN_GH_{pressure_level}",valid_time,issuance_time=issuance_time)
+        self.save_plot()
+
 
     def _set_plot_filename(self,figure_name,valid_time,issuance_time=None):
         valid_time_chunk = f"_valid_{valid_time:%Y%m%dT%H%M}"
